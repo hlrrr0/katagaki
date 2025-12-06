@@ -67,10 +67,38 @@ export async function searchTitles(searchParams: {
   return titles;
 }
 
-export async function createTitle(title: Omit<Title, 'title_id' | 'created_at'>): Promise<string> {
+// 次の公認番号を生成
+async function generateOfficialNumber(): Promise<string> {
   const titlesCollection = collection(getDb(), COLLECTIONS.TITLES);
+  const titlesSnapshot = await getDocs(titlesCollection);
+  
+  // 既存の公認番号から最大の番号を取得
+  let maxNumber = 0;
+  titlesSnapshot.forEach((doc) => {
+    const title = doc.data() as Title;
+    if (title.official_number && title.official_number.startsWith('ktgk_')) {
+      const numberPart = title.official_number.replace('ktgk_', '');
+      const num = parseInt(numberPart, 10);
+      if (!isNaN(num) && num > maxNumber) {
+        maxNumber = num;
+      }
+    }
+  });
+  
+  // 次の番号を生成（6桁でゼロパディング）
+  const nextNumber = maxNumber + 1;
+  return `ktgk_${nextNumber.toString().padStart(6, '0')}`;
+}
+
+export async function createTitle(title: Omit<Title, 'title_id' | 'created_at' | 'official_number'>): Promise<string> {
+  const titlesCollection = collection(getDb(), COLLECTIONS.TITLES);
+  
+  // 公認番号を自動生成
+  const officialNumber = await generateOfficialNumber();
+  
   const docRef = await addDoc(titlesCollection, {
     ...title,
+    official_number: officialNumber,
     created_at: Timestamp.now(),
   });
   return docRef.id;

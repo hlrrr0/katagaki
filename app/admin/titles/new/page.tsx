@@ -20,7 +20,6 @@ export default function NewTitlePage() {
     category_id: '',
     base_price: 10000,
     price_tier: 'Standard' as 'Exclusive' | 'Standard' | 'Premium',
-    official_number: '',
     is_official: false,
     status: 'draft' as 'available' | 'sold_out' | 'draft',
     purchasable_limit: 1,
@@ -268,18 +267,10 @@ export default function NewTitlePage() {
               </div>
 
               {formData.is_official && (
-                <div>
-                  <label htmlFor="official_number" className="block text-sm font-medium text-gray-700 mb-2">
-                    公認番号
-                  </label>
-                  <input
-                    id="official_number"
-                    type="text"
-                    value={formData.official_number}
-                    onChange={(e) => setFormData({ ...formData, official_number: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="例: KK-2025-001"
-                  />
+                <div className="rounded-md bg-blue-50 p-4">
+                  <p className="text-sm text-blue-800">
+                    公認番号は保存時に自動的に付番されます（形式: ktgk_000001）
+                  </p>
                 </div>
               )}
             </div>
@@ -296,7 +287,7 @@ export default function NewTitlePage() {
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={loading || categories.length === 0}
+              disabled={loading}
               className="flex-1 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '作成中...' : '肩書きを作成'}
