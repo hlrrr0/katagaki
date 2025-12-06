@@ -41,9 +41,6 @@ export default function NewTitlePage() {
     try {
       const categoriesData = await getAllCategories();
       setCategories(categoriesData);
-      if (categoriesData.length > 0) {
-        setFormData((prev) => ({ ...prev, category_id: categoriesData[0].category_id }));
-      }
     } catch (error) {
       console.error('カテゴリの読み込みエラー:', error);
     }
@@ -149,30 +146,21 @@ export default function NewTitlePage() {
 
               <div>
                 <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-2">
-                  カテゴリ <span className="text-red-500">*</span>
+                  カテゴリ <span className="text-gray-500 text-xs">(任意)</span>
                 </label>
                 <select
                   id="category_id"
                   value={formData.category_id}
                   onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                  required
                 >
+                  <option value="">カテゴリなし</option>
                   {categories.map((category) => (
                     <option key={category.category_id} value={category.category_id}>
                       {category.name_ja}
                     </option>
                   ))}
                 </select>
-                {categories.length === 0 && (
-                  <p className="mt-2 text-sm text-red-600">
-                    カテゴリが登録されていません。先に
-                    <Link href="/admin/categories/new" className="underline">
-                      カテゴリを作成
-                    </Link>
-                    してください。
-                  </p>
-                )}
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ export interface Title {
   title_id: string;
   name: string;
   description: string;
-  category_id: string;
+  category_id?: string; // Optional: カテゴリなしも許可
   base_price: number;
   price_tier: 'Exclusive' | 'Standard' | 'Premium';
   official_number?: string;
