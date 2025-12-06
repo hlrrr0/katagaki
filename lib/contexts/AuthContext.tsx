@@ -8,7 +8,8 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db, isConfigured } from '@/lib/firebase/config';
@@ -38,6 +39,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
+
+    // リダイレクト後の認証結果を処理
+    const handleRedirectResult = async () => {
+      if (!auth) return;
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user && db) {
+          // Firestoreにユーザー情報を保存（既存ユーザーの場合はスキップ）
+          const userDocRef = doc(db, COLLECTIONS.USERS, result.user.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (!userDoc.exists()) {
+            const newUserData: User = {
+              user_id: result.user.uid,
+              display_name: result.user.displayName || 'Google User',
+              email: result.user.email || '',
+              role: 'user',
+              is_profile_public: false,
+            };
+            await setDoc(userDocRef, newUserData);
+          }
+        }
+      } catch (error) {
+        console.error('リダイレクト認証エラー:', error);
+      }
+    };
+
+    handleRedirectResult();
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
@@ -95,26 +124,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     if (!auth) throw new Error('Firebase is not configured');
-    if (!db) throw new Error('Firestore is not configured');
     
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-
-    // Firestoreにユーザー情報を保存（既存ユーザーの場合はスキップ）
-    const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
-    const userDoc = await getDoc(userDocRef);
-    
-    if (!userDoc.exists()) {
-      const newUserData: User = {
-        user_id: user.uid,
-        display_name: user.displayName || 'Google User',
-        email: user.email || '',
-        role: 'user',
-        is_profile_public: false,
-      };
-      await setDoc(userDocRef, newUserData);
-    }
+    await signInWithRedirect(auth, provider);
   };
 
   const logout = async () => {

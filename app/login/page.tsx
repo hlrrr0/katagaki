@@ -19,17 +19,11 @@ function LoginForm() {
 
     try {
       await signInWithGoogle();
-      router.push(redirect);
+      // リダイレクト方式なので、ここではページ遷移しない
+      // 認証成功後、Firebaseが自動的にリダイレクトバックする
     } catch (err: any) {
       console.error('ログインエラー:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('ログインがキャンセルされました');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('ポップアップがブロックされました。ポップアップを許可してください');
-      } else {
-        setError('ログインに失敗しました。もう一度お試しください');
-      }
-    } finally {
+      setError('ログインに失敗しました。もう一度お試しください');
       setLoading(false);
     }
   };

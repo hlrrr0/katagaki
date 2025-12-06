@@ -16,17 +16,11 @@ export default function SignUpPage() {
 
     try {
       await signInWithGoogle();
-      router.push('/');
+      // リダイレクト方式なので、ここではページ遷移しない
+      // 認証成功後、Firebaseが自動的にリダイレクトバックする
     } catch (err: any) {
       console.error('サインアップエラー:', err);
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError('サインアップがキャンセルされました');
-      } else if (err.code === 'auth/popup-blocked') {
-        setError('ポップアップがブロックされました。ポップアップを許可してください');
-      } else {
-        setError('アカウントの作成に失敗しました。もう一度お試しください');
-      }
-    } finally {
+      setError('アカウントの作成に失敗しました。もう一度お試しください');
       setLoading(false);
     }
   };
