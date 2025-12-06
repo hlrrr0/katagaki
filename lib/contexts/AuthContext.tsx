@@ -7,8 +7,10 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 import { auth, db, isConfigured } from '@/lib/firebase/config';
 import { User, COLLECTIONS } from '@/lib/types/models';
 
@@ -18,6 +20,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   isAdmin: boolean;
 }
@@ -90,6 +93,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await setDoc(userDocRef, newUserData);
   };
 
+  const signInWithGoogle = async () => {
+    if (!auth) throw new Error('Firebase is not configured');
+    if (!db) throw new Error('Firestore is not configured');
+    
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Firestoreにユーザー情報を保存（既存ユーザーの場合はスキップ）
+    const userDocRef = doc(db, COLLECTIONS.USERS, user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (!userDoc.exists()) {
+      const newUserData: User = {
+        user_id: user.uid,
+        display_name: user.displayName || 'Google User',
+        email: user.email || '',
+        role: 'user',
+        is_profile_public: false,
+      };
+      await setDoc(userDocRef, newUserData);
+    }
+  };
+
   const logout = async () => {
     if (!auth) throw new Error('Firebase is not configured');
     await signOut(auth);
@@ -103,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     logout,
     isAdmin,
   };
