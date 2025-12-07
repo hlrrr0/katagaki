@@ -40,17 +40,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let unsubscribe: (() => void) | undefined;
+
     // リダイレクト後の認証結果を処理
     const handleRedirectResult = async () => {
       if (!auth) return;
       try {
+        console.log('リダイレクト結果をチェック中...');
         const result = await getRedirectResult(auth);
+        console.log('リダイレクト結果:', result);
+        
         if (result && result.user && db) {
+          console.log('リダイレクト認証成功:', result.user.email);
           // Firestoreにユーザー情報を保存（既存ユーザーの場合はスキップ）
           const userDocRef = doc(db, COLLECTIONS.USERS, result.user.uid);
           const userDoc = await getDoc(userDocRef);
           
           if (!userDoc.exists()) {
+            console.log('新規ユーザーを作成中...');
             const newUserData: User = {
               user_id: result.user.uid,
               display_name: result.user.displayName || 'Google User',
@@ -60,44 +67,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
             await setDoc(userDocRef, newUserData);
           }
+
+          // リダイレクト先URLを取得
+          const redirectUrl = localStorage.getItem('authRedirect') || '/';
+          localStorage.removeItem('authRedirect');
+          console.log('リダイレクト先:', redirectUrl);
+          window.location.href = redirectUrl;
         }
       } catch (error) {
         console.error('リダイレクト認証エラー:', error);
       }
     };
 
-    handleRedirectResult();
-
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
-      
-      if (firebaseUser && db) {
-        // Firestoreからユーザーデータを取得
-        const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+    // 先にリダイレクト結果を処理してから、認証状態の監視を開始
+    handleRedirectResult().then(() => {
+      unsubscribe = onAuthStateChanged(auth!, async (firebaseUser) => {
+        console.log('認証状態変更:', firebaseUser?.email || 'ログアウト');
+        setUser(firebaseUser);
         
-        if (userDoc.exists()) {
-          setUserData(userDoc.data() as User);
+        if (firebaseUser && db) {
+          // Firestoreからユーザーデータを取得
+          const userDocRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          if (userDoc.exists()) {
+            const data = userDoc.data() as User;
+            console.log('ユーザーデータ取得:', data);
+            setUserData(data);
+          } else {
+            // 新規ユーザーの場合、デフォルトデータを作成
+            const newUserData: User = {
+              user_id: firebaseUser.uid,
+              display_name: firebaseUser.displayName || 'ユーザー',
+              email: firebaseUser.email || '',
+              role: 'user',
+              is_profile_public: false,
+            };
+            await setDoc(userDocRef, newUserData);
+            setUserData(newUserData);
+          }
         } else {
-          // 新規ユーザーの場合、デフォルトデータを作成
-          const newUserData: User = {
-            user_id: firebaseUser.uid,
-            display_name: firebaseUser.displayName || 'ユーザー',
-            email: firebaseUser.email || '',
-            role: 'user',
-            is_profile_public: false,
-          };
-          await setDoc(userDocRef, newUserData);
-          setUserData(newUserData);
+          setUserData(null);
         }
-      } else {
-        setUserData(null);
-      }
-      
-      setLoading(false);
+        
+        setLoading(false);
+      });
     });
 
-    return unsubscribe;
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

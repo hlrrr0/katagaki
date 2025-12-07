@@ -18,6 +18,10 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      // リダイレクト先URLをlocalStorageに保存
+      localStorage.setItem('authRedirect', redirect);
+      console.log('リダイレクト先を保存:', redirect);
+      
       await signInWithGoogle();
       // リダイレクト方式なので、ここではページ遷移しない
       // 認証成功後、Firebaseが自動的にリダイレクトバックする
