@@ -18,13 +18,10 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // リダイレクト先URLをlocalStorageに保存
-      localStorage.setItem('authRedirect', redirect);
-      console.log('リダイレクト先を保存:', redirect);
-      
       await signInWithGoogle();
-      // リダイレクト方式なので、ここではページ遷移しない
-      // 認証成功後、Firebaseが自動的にリダイレクトバックする
+      // ポップアップ方式なので、ログイン成功後に直接リダイレクト
+      console.log('ログイン成功、リダイレクト:', redirect);
+      router.push(redirect);
     } catch (err: any) {
       console.error('ログインエラー:', err);
       setError('ログインに失敗しました。もう一度お試しください');
