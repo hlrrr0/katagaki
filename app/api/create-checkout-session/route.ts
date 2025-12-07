@@ -17,14 +17,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!process.env.NEXT_PUBLIC_APP_URL) {
-      console.error('NEXT_PUBLIC_APP_URL is not defined');
-      return NextResponse.json(
-        { error: 'App configuration error: Missing app URL' },
-        { status: 500 }
-      );
-    }
-
     const { titleId, titleName, price } = await request.json();
 
     console.log('Creating checkout session:', { titleId, titleName, price });
@@ -38,6 +30,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // リクエストからベースURLを取得
+    const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://katagaki.vercel.app';
+    console.log('Using base URL:', origin);
 
     // Checkout Sessionを作成
     const session = await stripe.checkout.sessions.create({
@@ -56,8 +52,8 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/titles/${titleId}`,
+      success_url: `${origin}/purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/titles/${titleId}`,
       metadata: {
         titleId,
         userId: authHeader.split('Bearer ')[1], // 簡易的な実装
