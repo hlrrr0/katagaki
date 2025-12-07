@@ -8,11 +8,31 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(request: NextRequest) {
   try {
+    // 環境変数チェック
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not defined');
+      return NextResponse.json(
+        { error: 'Stripe configuration error: Missing secret key' },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      console.error('NEXT_PUBLIC_APP_URL is not defined');
+      return NextResponse.json(
+        { error: 'App configuration error: Missing app URL' },
+        { status: 500 }
+      );
+    }
+
     const { titleId, titleName, price } = await request.json();
+
+    console.log('Creating checkout session:', { titleId, titleName, price });
 
     // 認証チェック
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Unauthorized request');
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -44,11 +64,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('Checkout session created:', session.id);
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error: any) {
     console.error('Checkout session creation error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      type: error.type,
+      code: error.code,
+      statusCode: error.statusCode,
+    });
     return NextResponse.json(
-      { error: error.message },
+      { 
+        error: error.message || 'Failed to create checkout session',
+        details: error.type || 'Unknown error'
+      },
       { status: 500 }
     );
   }
