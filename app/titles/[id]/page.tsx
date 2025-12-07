@@ -54,12 +54,39 @@ export default function TitleDetailPage() {
     }
   };
 
-  const handlePurchase = () => {
+  const handlePurchase = async () => {
     if (!user) {
       router.push('/login?redirect=/titles/' + titleId);
       return;
     }
-    router.push(`/checkout/${titleId}`);
+
+    try {
+      // Checkout Sessionを作成
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.uid}`,
+        },
+        body: JSON.stringify({
+          titleId: title?.title_id,
+          titleName: title?.name,
+          price: title?.base_price,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        // Stripe Checkoutページにリダイレクト
+        window.location.href = data.url;
+      } else {
+        alert('購入処理の開始に失敗しました');
+      }
+    } catch (error) {
+      console.error('購入エラー:', error);
+      alert('購入処理の開始に失敗しました');
+    }
   };
 
   if (loading) {
