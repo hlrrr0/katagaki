@@ -198,7 +198,7 @@ export default function AdminTitlesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm text-gray-900">
-                        {getCategoryName(title.category_id)}
+                        {title.category_id ? getCategoryName(title.category_id) : '未分類'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
